@@ -19,31 +19,40 @@ PCSE作物生长模型演示平台是一个基于Python Crop Simulation Environm
 
 ### 项目结构
 ```
+├── .gitignore            # Git忽略文件配置
+├── .vs/                  # Visual Studio配置目录
+├── LICENSE               # 开源许可证
+├── README.md             # 项目说明文档
+├── angstrom_results.csv  # Angstrom参数结果数据
 ├── app.py                # 主应用程序文件，包含Flask路由和PCSE模拟实现
+├── data/                 # 数据文件目录
+│   ├── Wofost71_WLP_FD.conf # WOFOST模型配置文件
+│   ├── agro/             # 农业管理数据文件
+│   ├── crop/             # 作物数据文件
+│   ├── meteo/            # 气象数据文件
+│   ├── obs/              # 观测数据文件
+│   ├── output/           # 输出数据目录
+│   ├── site/             # 站点数据文件
+│   ├── soil/             # 土壤数据文件
+│   ├── wofost_npk.site   # WOFOST NPK站点配置
+│   └── wofost_npk.soil   # WOFOST NPK土壤配置
+├── nasa_to_excel_simple.py # NASA天气数据转换工具
+├── requirements.txt      # 项目依赖列表
 ├── static/               # 静态资源文件
 │   ├── css/              # CSS样式文件
 │   └── js/               # JavaScript文件（包含图表和交互逻辑）
 ├── templates/            # HTML模板文件
+│   ├── datainput.html    # 数据输入页面
 │   ├── index.html        # 主页面模板
 │   ├── layout.html       # 布局模板
-│   ├── datainput.html    # 数据输入页面
 │   └── weather_input.html # 天气数据输入页面
-├── data/                 # 数据文件目录
-│   ├── crop/             # 作物数据文件
-│   ├── soil/             # 土壤数据文件
-│   ├── meteo/            # 气象数据文件
-│   ├── agro/             # 农业管理数据文件
-│   └── site/             # 站点数据文件
-├── fix_angstrom_error.py # Angstrom参数错误修复工具
-├── nasa_to_excel.py      # NASA天气数据转换工具
-├── requirements.txt      # 项目依赖列表
-└── README.md             # 项目说明文档
+└── yaml_agro_writer.py   # YAML格式农业管理文件生成工具
 ```
 
 ## 功能特性
 
 ### 作物模拟功能
-- 支持24种作物类型的生长模拟
+- 支持多种作物类型的生长模拟
 - 每种作物提供至少一个品种选项
 - 可设置模拟天数、开始日期和地理位置
 - 支持上传自定义天气文件
@@ -132,46 +141,41 @@ python app.py
    - 文件必须符合PCSE ExcelWeatherDataProvider的格式要求
    - 如果文件中存在Angstrom参数错误，可以使用提供的修复工具
 
-### 修复Angstrom参数错误
+### YAML农业管理文件生成
 
-如果遇到"invalid Angstrom A value!"错误，可以使用项目提供的修复工具：
+项目提供了`yaml_agro_writer.py`工具，用于生成符合PCSE格式的农业管理YAML文件：
 
 ```powershell
-# 修复单个文件
-python fix_angstrom_error.py path/to/weather_file.xlsx
-
-# 批量修复目录中的所有文件
-python fix_angstrom_error.py path/to/directory
+python yaml_agro_writer.py
 ```
 
 ## 支持的作物类型
 
-平台支持以下24种作物类型的模拟：
+平台支持多种作物类型的模拟，包括但不限于：
 
-1. potato (土豆)
-2. tomato (番茄)
-3. carrot (胡萝卜)
-4. barley (大麦)
-5. cassava (木薯)
-6. chickpea (鹰嘴豆)
-7. cotton (棉花)
-8. cowpea (豇豆)
-9. fababean (蚕豆)
-10. groundnut (花生)
-11. maize (玉米)
-12. millet (小米)
-13. mungbean (绿豆)
-14. pigeonpea (木豆)
-15. rapeseed (油菜籽)
-16. rice (水稻)
-17. sorghum (高粱)
-18. soybean (大豆)
-19. sugarbeet (甜菜)
-20. sugarcane (甘蔗)
-21. sunflower (向日葵)
-22. sweetpotato (甘薯)
-23. tobacco (烟草)
-24. wheat (小麦)
+- barley (大麦)
+- cassava (木薯)
+- chickpea (鹰嘴豆)
+- cotton (棉花)
+- cowpea (豇豆)
+- fababean (蚕豆)
+- groundnut (花生)
+- maize (玉米)
+- millet (小米)
+- mungbean (绿豆)
+- pigeonpea (木豆)
+- potato (土豆)
+- rapeseed (油菜籽)
+- rice (水稻)
+- rye_grass (黑麦草)
+- sorghum (高粱)
+- soybean (大豆)
+- sugarbeet (甜菜)
+- sugarcane (甘蔗)
+- sunflower (向日葵)
+- sweetpotato (甘薯)
+- tobacco (烟草)
+- wheat (小麦)
 
 ## 常见问题解答
 

@@ -40,12 +40,12 @@ from nasa_to_excel_simple import get_nasa_weather_data, create_excel_file, DEFAU
 PROJECT_ROOT = Path(os.path.dirname(os.path.abspath(__file__)))
 # PROJECT_ROOT = Path(__file__).parent.parent   # 根据实际项目结构调整相对层级 .parent 
 DATA_DIR = PROJECT_ROOT / "data"
-WOFOST81_DIR = DATA_DIR / "Irrigation81"
-INPUT_DIR = WOFOST81_DIR / "input"
-CROP_DIR = INPUT_DIR / "crop"
-OUTPUT_DIR = WOFOST81_DIR / "output"
+# WOFOST81_DIR = DATA_DIR / "Irrigation81"
+INPUT_DIR = DATA_DIR / "input"
+CROP_DIR = DATA_DIR / "crop"
+OUTPUT_DIR = DATA_DIR / "output"
 WEATHER_DIR = DATA_DIR / "meteo"  # 统一使用meteo目录存储天气数据
-AGRO_DIR = INPUT_DIR / "agro"
+AGRO_DIR = DATA_DIR / "agro"
 # 实现PCSE真实模拟功能
 class PCSESimulator:
     def __init__(self):
