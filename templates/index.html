@@ -1,0 +1,150 @@
+{% extends "layout.html" %}
+
+{% block title %}首页 - PCSE作物模型演示平台{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+{% endblock %}
+
+{% block content %}
+    <h1>PCSE作物生长模型演示</h1>
+        
+        <div class="control-panel">
+            <h2>参数设置</h2>
+
+            <div class="input-group" style="display: none;">
+                <label for="initial_biomass">初始生物量 (kg/ha):</label>
+                <input type="number" id="initial_biomass" value="10" min="1" max="50">
+            </div>
+            <div class="inputfile-group">
+                <label for="agro_file">农业管理文件:</label>
+                <input type="file" id="agro_file" accept=".yaml">
+            </div>
+            <div class="current-date-info" style="margin: 10px 0; padding: 10px; background-color: #f0f0f0; border-radius: 5px;">
+                <p style="margin: 0; font-weight: bold;">当前日期: <span id="current-date"></span></p>
+                <p style="margin: 5px 0 0 0; font-size: 0.9em; color: #555;">种植日期限制: 1984年1月1日 至 <span id="maxDate"></span> (天气数据限制)</p>
+            </div>
+            <div class="input-group">
+                <label for="start_date">种植开始日期:</label>
+                <input type="date" id="start_date" value="2020-03-01" min="1984-01-01">
+            </div>
+            <script>
+                // 显示当前日期并设置日期输入的最大值
+                document.addEventListener('DOMContentLoaded', function() {
+                    const today = new Date();
+                    
+                    // 计算当前日期前7天的日期
+                    const maxDate = new Date();
+                    maxDate.setDate(today.getDate() - 7);
+                    
+                    // 格式化日期为YYYY-MM-DD格式
+                    const formatDate = (date) => {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    };
+                    
+                    // 显示当前日期
+                    document.getElementById('current-date').textContent = formatDate(today);
+                    
+                    // 显示最大日期（当前日期前7天）
+                    // 格式化日期为YYYY年MM月DD日格式
+                    const year = maxDate.getFullYear();
+                    const month = String(maxDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(maxDate.getDate()).padStart(2, '0');
+                    const formattedDate = `${year}年${month}月${day}日`;
+                    
+                    document.getElementById('maxDate').textContent = formattedDate;
+                    
+                    // 设置日期输入的最大限制
+                    const startDateInput = document.getElementById('start_date');
+                    startDateInput.max = formatDate(maxDate);
+                });
+            </script>
+            <div class="input-group">
+                <label for="days">模拟天数:</label>
+                <input type="number" id="days" value="130" min="7" max="400">
+            </div>
+            <div class="input-group" style="display: none;">
+                <label for="end_date">结束日期:</label>
+                <input type="date" id="end_date" value="2020-09-01">
+            </div>
+            <div class="inputfile-group">
+                <label for="weather_file">天气文件:</label>
+                <input type="file" id="weather_file" accept=".xlsx">
+            </div>
+            <div class="form-group">
+                <label for="crop_name">作物名称 Crop Name:</label>
+                <select id="crop_name" name="crop_name">
+                    {% for name in crop_names %}
+                    <option value="{{ name }}" {% if crop_data and crop_data.crop_name == name %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="variety_name">作物品种 Variety Name:</label>
+                <select id="variety_name" name="variety_name">
+                    {% if crop_data %}
+                        {% for name in variety_names[crop_data.crop_name] %}
+                        <option value="{{ name }}" {% if crop_data.variety_name == name %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    {% else %}
+                        {% for name in variety_names[crop_names[0]] %}
+                        <option value="{{ name }}">{{ name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+            <h2>种植地点</h2>
+            <div class="form-group">
+                <label for="latitude">纬度:</label>
+                <input type="number" id="latitude" value="39.9042" step="0.0001" min="-90" max="90" required>
+            </div>
+            <div class="form-group">
+                <label for="longitude">经度:</label>
+                <input type="number" id="longitude" value="116.4074" step="0.0001" min="-180" max="180" required>
+            </div>
+            <div class="form-group" style="display: none;">
+                <label for="year">年份:</label>
+                <input type="number" id="year" value="2020" min="1984" max="2025" required>
+            </div>
+            <div class="input-group" style="display: none;">
+                <label for="growth_rate">生长速率系数:</label>
+                <input type="number" id="growth_rate" value="0.1" step="0.01" min="0.01" max="0.5">
+            </div>
+            <button id="simulate-btn">运行模拟</button>
+        </div>
+        
+        <div class="results">
+            <h2>模拟结果</h2>
+            
+            <!-- 生物量图表 -->
+            <div class="chart-section">
+                <h3>生物量变化 (kg/ha)</h3>
+                <div class="chart-container">
+                    <canvas id="biomass-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 叶面积指数图表 -->
+            <div class="chart-section">
+                <h3>叶面积指数变化</h3>
+                <div class="chart-container">
+                    <canvas id="lai-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 产量图表 -->
+            <div class="chart-section">
+                <h3>预估产量变化</h3>
+                <div class="chart-container">
+                    <canvas id="yield-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

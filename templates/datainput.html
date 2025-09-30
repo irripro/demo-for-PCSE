@@ -1,0 +1,183 @@
+{% extends "layout.html" %}
+
+{% block title %}参数输入 - PCSE作物模型演示平台{% endblock %}
+
+{% block head %}
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+    }
+
+    h1 {
+        color: #333;
+    }
+
+    form {
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    label {
+        display: inline-block;
+        width: 380px;
+        text-align: left;
+        margin-right: 10px;
+        font-weight: bold;
+    }
+
+    select {
+        padding: 5px;
+        width: 100%;
+        max-width: 300px;
+        height: 30px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    input[type="date"] {
+        padding: 5px;
+        width: 100%;
+        max-width: 300px;
+        height: 30px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    input[type="number"] {
+        padding: 5px;
+        width: 100%;
+        max-width: 300px;
+        height: 30px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    input[type="submit"] {
+        padding: 5px 10px;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+        input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+    ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    li {
+        margin: 5px 0;
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<h1>作物数据 Crop Data</h1>
+<form id="cropForm" method="POST">
+    <div class="form-group">
+        <label for="crop_name">作物名称 Crop Name:</label>
+        <select id="crop_name" name="crop_name">
+            {% for name in crop_names %}
+            <option value="{{ name }}" {% if crop_data and crop_data.crop_name == name %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="variety_name">作物品种 Variety Name:</label>
+        <select id="variety_name" name="variety_name">
+            {% if crop_data %}
+                {% for name in variety_names[crop_data.crop_name] %}
+                <option value="{{ name }}" {% if crop_data.variety_name == name %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            {% else %}
+                {% for name in variety_names[crop_names[0]] %}
+                <option value="{{ name }}">{{ name }}</option>
+                {% endfor %}
+            {% endif %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="crop_start_date">开始种植日期 Crop Start Date:</label>
+        <input type="date" id="crop_start_date" name="crop_start_date" value="{{ crop_data.crop_start_date }}" placeholder="YYYY-MM-DD">
+    </div>
+    <div class="form-group">
+        <label for="crop_start_type">种植开始方式 Crop Start Type:</label>
+        <select id="crop_start_type" name="crop_start_type">
+            {% for type in start_types %}
+            <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="crop_end_date">结束日期 Crop End Date:</label>
+        <input type="date" id="crop_end_date" name="crop_end_date" value="{{ crop_data.crop_end_date }}" placeholder="YYYY-MM-DD">
+    </div>
+    <div class="form-group">
+        <label for="crop_end_type">种植结束方式 Crop End Type:</label>
+        <select id="crop_end_type" name="crop_end_type">
+            {% for type in end_types %}
+            <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="max_duration">最大可能种植天数 Max Duration:</label>
+        <input type="number" id="max_duration" name="max_duration" value="{{ crop_data.max_duration }}" placeholder="Enter max duration">
+    </div>
+    <input type="submit" value="确定">
+</form>
+
+<script>
+        // 品种选择动态更新
+        document.getElementById('crop_name').addEventListener('change', function() {
+            const selectedCropName = this.value;
+            window.location.href = '/Input_data?crop_name=' + selectedCropName;
+        });
+        
+        // 表单提交处理
+        $(document).ready(function() {
+            $('#cropForm').submit(function (event) {
+                event.preventDefault();
+
+                var formData = {
+                    crop_name: $('#crop_name').val(),
+                    variety_name: $('#variety_name').val(),
+                    crop_start_date: $('#crop_start_date').val(),
+                    crop_start_type: $('#crop_start_type').val(),
+                    crop_end_date: $('#crop_end_date').val(),
+                    crop_end_type: $('#crop_end_type').val(),
+                    max_duration: parseFloat($('#max_duration').val())
+                };
+
+                $.ajax({
+                    type: "POST",
+                    url: "/update_crop_data",
+                    contentType: "application/json",
+                    data: JSON.stringify(formData),
+                    success: function (response) {
+                        console.log(response);
+                        alert("数据更新成功");
+                    },
+                    error: function (error) {
+                        console.log("更新数据出错:", error);
+                        alert("更新数据失败，请稍后再试");
+                    }
+                });
+            });
+        });
+    </script>
+
+{% endblock %}
+
+
+
