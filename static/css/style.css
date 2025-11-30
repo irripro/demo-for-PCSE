@@ -186,3 +186,165 @@ input {
     border: 1px solid #ddd;
     border-radius: 4px;
 }
+
+/* 响应式设计 - 移动设备 */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+        margin: 0;
+        max-width: 100%;
+    }
+    
+    .navbar {
+        padding: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .navbar-brand {
+        font-size: 18px;
+        margin-bottom: 10px;
+    }
+    
+    .navbar-menu ul {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .navbar-menu li {
+        margin-left: 0;
+        margin-bottom: 5px;
+    }
+    
+    .chart-section {
+        margin-bottom: 20px;
+        padding: 10px;
+    }
+    
+    .chart-container {
+        height: 250px; /* 移动设备上减少图表高度 */
+        max-height: 40vh;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    label {
+        font-size: 14px;
+        display: block;
+        margin-bottom: 5px;
+        width: auto;
+    }
+    
+    select, input {
+        font-size: 14px;
+        padding: 8px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    button {
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+    }
+    
+    /* 确保下拉菜单在移动设备上正常显示 */
+    .dropdown-menu {
+        position: static;
+        float: none;
+        width: 100%;
+    }
+}
+
+/* 针对小屏幕设备的额外优化 */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    
+    .chart-container {
+        height: 200px;
+        margin: 10px 0;
+        padding: 5px;
+        box-sizing: border-box;
+    }
+    
+    .navbar-brand {
+        font-size: 16px;
+        font-weight: bold;
+    }
+    
+    h1, h2, h3 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+        margin-top: 15px;
+    }
+    
+    /* 优化内容区域 */
+    .content {
+        padding: 10px;
+    }
+    
+    /* 优化文本可读性 */
+    p {
+        margin-bottom: 15px;
+        font-size: 14px;
+    }
+    
+    /* 确保表单在移动设备上的可用性 */
+    .form-control {
+        padding: 10px;
+        font-size: 16px; /* 防止iOS自动缩放 */
+        border-radius: 4px;
+    }
+    
+    /* 按钮优化 */
+    .btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+    }
+    
+    /* 优化卡片布局 */
+    .card {
+        padding: 15px;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    /* 确保表格在移动设备上的处理 */
+    table {
+        font-size: 12px;
+        width: 100%;
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    /* 调整输入框和选择框的交互体验 */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        width: 100%;
+        padding: 10px;
+        font-size: 16px;
+    }
+    
+    /* 修复移动设备上的触摸目标大小 */
+    a, button {
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
