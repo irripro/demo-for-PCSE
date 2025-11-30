@@ -584,40 +584,53 @@ class PCSESimulator:
     def _clean_json_serializable(self, data):
         """递归清理数据，确保所有值都是可JSON序列化的基本Python类型"""
         try:
-            if isinstance(data, dict):
-                return {key: self._clean_json_serializable(value) for key, value in data.items()}
-            elif isinstance(data, list):
-                return [self._clean_json_serializable(item) for item in data]
-            elif isinstance(data, bool):
-                # 布尔值转换为整数以确保JSON序列化兼容性
-                return int(data)
-            elif data is None:
+            if data is None:
                 return None
+            elif isinstance(data, dict):
+                # 递归处理字典，确保所有键都是字符串
+                result = {}
+                for key, value in data.items():
+                    clean_key = str(key) if not isinstance(key, str) else key
+                    clean_value = self._clean_json_serializable(value)
+                    if clean_value is not None:
+                        result[clean_key] = clean_value
+                return result
+            elif isinstance(data, list):
+                # 递归处理列表，过滤掉None值
+                return [item for item in [self._clean_json_serializable(elem) for elem in data] if item is not None]
+            elif isinstance(data, (bool, int, float, str)):
+                # 基本类型直接返回，但布尔值转为整数以确保兼容性
+                return int(data) if isinstance(data, bool) else data
             elif hasattr(data, 'item') and callable(data.item):
                 # 处理numpy类型
                 try:
                     return data.item()
                 except:
-                    return float(data)
+                    try:
+                        return float(data)
+                    except:
+                        return str(data)
             elif hasattr(data, 'to_dict') and callable(data.to_dict):
                 # 处理pandas对象
-                return self._clean_json_serializable(data.to_dict())
+                try:
+                    return self._clean_json_serializable(data.to_dict())
+                except:
+                    return str(data)
             else:
                 # 尝试转换为基本类型
                 try:
-                    if isinstance(data, (int, float)):
-                        return data
-                    elif isinstance(data, str):
-                        return data
-                    else:
-                        # 尝试转换为浮点数（对于数值类型）
-                        return float(data)
+                    return float(data)
                 except (ValueError, TypeError):
                     # 如果转换失败，返回字符串表示
-                    return str(data)
-        except Exception:
-            # 出错时返回None，让上层处理
-            return None
+                    try:
+                        return str(data)
+                    except:
+                        # 如果连字符串转换都失败，返回占位符
+                        return '[Unserializable]'
+        except Exception as e:
+            print(f"清理JSON序列化数据时出错: {str(e)}")
+            # 出错时返回占位符而不是None，避免删除字段
+            return '[Error]'
 
 app = Flask(__name__)
 simulator = PCSESimulator()
@@ -870,23 +883,158 @@ def get_weather_data():
 @app.route('/simulate', methods=['POST'])
 def simulate():
     """处理模拟请求"""
+    # 设置响应头
+    response_headers = {
+        'Content-Type': 'application/json',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY'
+    }
+    
+    # 初始化请求ID
+    request_id = str(uuid.uuid4())[:8]
+    
     try:
-        data = request.json
-        request_id = str(uuid.uuid4())[:8]
-        
-        simulator = PCSESimulator()
-        result = simulator.simulate_crop_growth(data)
-        
-        # 测试结果是否可JSON序列化
+        # 确保请求数据是有效的JSON
+        if not request.is_json:
+            error_response = {
+                'error': '请求必须是JSON格式',
+                'request_id': request_id,
+                'timestamp': datetime.now().isoformat(),
+                'success': False
+            }
+            return jsonify(error_response), 400, response_headers
+            
+        # 尝试解析JSON数据，捕获可能的解析错误
         try:
-            json.dumps(result)
-        except Exception as json_error:
-            return jsonify({'error': f'结果JSON序列化失败: {str(json_error)}'}), 500
+            data = request.json
+            if not isinstance(data, dict):
+                raise ValueError("请求数据必须是有效的JSON对象")
+        except Exception as json_parse_error:
+            error_response = {
+                'error': 'JSON解析失败',
+                'error_details': str(json_parse_error),
+                'request_id': request_id,
+                'timestamp': datetime.now().isoformat(),
+                'success': False
+            }
+            print(f"[{request_id}] JSON解析失败: {json_parse_error}")
+            return jsonify(error_response), 400, response_headers
         
-        # 返回结果
-        return jsonify(result)
+        print(f"[{request_id}] 收到模拟请求")
+        
+        # 基本字段验证 - 仅记录警告而不直接返回错误
+        # 这样可以让模拟器根据实际情况处理缺失字段
+        if 'crop' not in data:
+            # 检查是否有crop_name字段（前端使用的名称）
+            if 'crop_name' in data:
+                print(f"[{request_id}] 警告: 请求中缺少crop字段，但找到了crop_name字段，将使用crop_name的值")
+                # 将crop_name的值赋给crop字段，确保模拟器能正确处理
+                data['crop'] = data['crop_name']
+            else:
+                print(f"[{request_id}] 警告: 请求中缺少crop字段，将使用默认值")
+        if 'start_date' not in data:
+            print(f"[{request_id}] 警告: 请求中缺少start_date字段，将使用默认值")
+        
+        # 创建模拟器实例
+        try:
+            simulator = PCSESimulator()
+        except Exception as init_error:
+            error_response = {
+                'error': '模拟器初始化失败',
+                'error_details': str(init_error),
+                'request_id': request_id,
+                'timestamp': datetime.now().isoformat(),
+                'success': False
+            }
+            print(f"[{request_id}] 模拟器初始化失败: {init_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify(error_response), 500, response_headers
+        
+        # 运行模拟
+        try:
+            result = simulator.simulate_crop_growth(data)
+            # 验证模拟结果格式
+            if not isinstance(result, dict):
+                raise ValueError("模拟结果必须是字典格式")
+        except Exception as simulation_error:
+            error_response = {
+                'error': '模拟过程失败',
+                'error_details': str(simulation_error),
+                'request_id': request_id,
+                'timestamp': datetime.now().isoformat(),
+                'success': False
+            }
+            print(f"[{request_id}] 模拟过程失败: {simulation_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify(error_response), 500, response_headers
+        
+        # 增强版JSON序列化检查和处理
+        try:
+            # 再次清理结果，确保所有数据都可序列化
+            clean_result = simulator._clean_json_serializable(result)
+            
+            # 确保clean_result不为None且为字典类型
+            if clean_result is None or not isinstance(clean_result, dict):
+                raise ValueError("清理后的数据无效")
+                
+            # 添加元数据
+            clean_result['request_id'] = request_id
+            clean_result['timestamp'] = datetime.now().isoformat()
+            clean_result.setdefault('success', True)
+                
+            # 测试序列化
+            json_str = json.dumps(clean_result)
+            print(f"[{request_id}] 模拟结果JSON序列化成功，数据大小: {len(json_str)} 字节")
+            
+            # 返回清理后的结果
+            return jsonify(clean_result), 200, response_headers
+        except Exception as json_error:
+            error_msg = f"[{request_id}] 结果JSON序列化失败: {str(json_error)}"
+            print(error_msg)
+            # 记录详细的错误信息，包括失败的字段
+            try:
+                import traceback
+                traceback.print_exc()
+                # 提供一个安全的错误响应，确保它是可序列化的
+                safe_response = {
+                    'error': '处理模拟结果时出错',
+                    'error_details': str(json_error),
+                    'request_id': request_id,
+                    'timestamp': datetime.now().isoformat(),
+                    'success': False
+                }
+                return jsonify(safe_response), 500, response_headers
+            except:
+                # 最终的安全保障
+                safe_text_response = '{{"error":"无法处理请求，请联系管理员","request_id":"{0}","timestamp":"{1}","success":false}}'.format(
+                    request_id, datetime.now().isoformat()
+                )
+                return safe_text_response, 500, {'Content-Type': 'application/json'}
     except Exception as e:
-        return jsonify({'error': f'模拟过程中出错: {str(e)}'}), 500
+        # 捕获所有其他异常
+        error_id = request_id
+        error_msg = f"[{error_id}] 模拟请求处理出错: {str(e)}"
+        print(error_msg)
+        try:
+            import traceback
+            traceback.print_exc()
+            # 确保错误响应是可序列化的
+            return jsonify({
+                'error': '服务器处理请求时出错',
+                'error_details': str(e),
+                'request_id': error_id,
+                'timestamp': datetime.now().isoformat(),
+                'success': False
+            }), 500, response_headers
+        except:
+            # 最终的安全保障
+            safe_text_response = '{{"error":"服务器错误","request_id":"{0}","timestamp":"{1}","success":false}}'.format(
+                error_id, datetime.now().isoformat()
+            )
+            return safe_text_response, 500, {'Content-Type': 'application/json'}
+
 
 @app.route('/upload_weather_file', methods=['POST'])
 def upload_weather_file():
